@@ -94,6 +94,6 @@ def train_model(
                 f'Test acc: {test_acc :5} '
             )
 
-    torch.save(model.state_dict(), settings.save_results_path / model.model_name + '.pt')
+    torch.save(model.state_dict(), settings.save_weights_path / f'{model.model_name}.pt')
 
     return results

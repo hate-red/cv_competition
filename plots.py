@@ -28,4 +28,4 @@ def plot_results(
         plt.show()
 
     if save_to is not None:
-        plt.savefig(save_to)
+        fig.savefig(save_to)

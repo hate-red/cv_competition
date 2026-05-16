@@ -19,6 +19,7 @@ criterion = torch.nn.CrossEntropyLoss()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 for model in tqdm(models):
+    model.to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=settings.lr)
 
     print(f'Started training {model.model_name} model...')
@@ -34,4 +35,4 @@ for model in tqdm(models):
 
     print(f'Finished training {model.model_name} model')
 
-    plot_results(results, model.model_name, save_to=settings.save_results_path / model.model_name + '.png')
+    plot_results(results, model.model_name, save_to=settings.save_results_path / f'{model.model_name}.png')
