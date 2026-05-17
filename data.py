@@ -10,8 +10,8 @@ transform = transforms.Compose([
     transforms.ToTensor()
 ])
 
-train_ds = MNIST(root=settings.train_ds_path, train=True, download=False, transform=transform)
-test_ds = MNIST(root=settings.test_ds_path, train=False, download=False, transform=transform)
+train_ds = MNIST(root=settings.train_ds_path, train=True, download=True, transform=transform)
+test_ds = MNIST(root=settings.test_ds_path, train=False, download=True, transform=transform)
 
 train_dataloader = DataLoader(
     dataset=train_ds,
