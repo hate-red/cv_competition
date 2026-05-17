@@ -14,6 +14,8 @@ class Settings:
     save_results_path: Path
     save_weights_path: Path
 
+    random_seed: int = 42
+
     batch_size: int = 1024
     num_workers: int = os.cpu_count() # type: ignore
     epochs: int = 100

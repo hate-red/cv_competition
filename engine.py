@@ -5,11 +5,7 @@ from tqdm import tqdm
 from collections import defaultdict
 
 from config import settings
-
-
-def calc_batch_accuracy(y_pred: torch.Tensor, y_true: torch.Tensor) -> float:
-    correct = (y_pred == y_true).sum().item()
-    return round(100 * correct / len(y_true), 2)
+from utils import calc_batch_accuracy
 
 
 def train_step(model, data_loader: DataLoader, criterion, optimizer, device: str) -> tuple[float, float]:
