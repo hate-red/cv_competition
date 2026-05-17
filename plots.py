@@ -15,7 +15,7 @@ def plot_results(
 ) -> None:
     sns.set_theme('paper')
 
-    fig, axes = plt.subplots(ceil(len(results) / 3), 3, figsize=(12, 7), dpi=120, num=title)
+    fig, axes = plt.subplots(ceil(len(results) / 2), 2, figsize=(12, 7), dpi=120, num=title)
     
     fig.suptitle(title)
     axes = axes.flatten()
