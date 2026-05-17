@@ -1,4 +1,3 @@
-import torch
 from torch.utils.data import DataLoader
 
 from torchvision.datasets import MNIST
@@ -23,6 +22,6 @@ train_dataloader = DataLoader(
 test_dataloader = DataLoader(
     dataset=test_ds,
     batch_size=settings.batch_size,
-    shuffle=False,
+    shuffle=True,
     # num_workers=settings.num_workers
 )
