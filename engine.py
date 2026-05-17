@@ -70,7 +70,7 @@ def train_model(
         train_dataloader: DataLoader,
         test_dataloader: DataLoader,
         device: str,
-        verbose: bool = True
+        verbose: bool = True,
 ) -> dict[str, list[float]]: # type: ignore
     results = defaultdict(list[float])
 

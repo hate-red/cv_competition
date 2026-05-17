@@ -13,7 +13,7 @@ from data import train_dataloader, test_dataloader
 from config import settings, mlp_params, cnn_params, vit_params
 
 
-models = [MLP(**mlp_params), CNN(**cnn_params), ViT(**vit_params)]
+models = [ViT(**vit_params)]
 
 criterion = torch.nn.CrossEntropyLoss()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -35,4 +35,4 @@ for model in tqdm(models):
 
     print(f'Finished training {model.model_name} model')
 
-    plot_results(results, model.model_name, save_to=settings.save_results_path / f'{model.model_name}.png')
+    plot_results(results, model.model_name, show=False, save_to=settings.save_results_path / f'{model.model_name}.png')

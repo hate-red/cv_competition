@@ -57,15 +57,13 @@ cnn_params: dict = {
 }
 
 vit_params: dict = {
-    'n_channels': settings.n_channels,
     'img_size': settings.img_size,
+    'n_channels': settings.n_channels,
+    'num_layers': 6,
     'patch_size': 4,
-    'n_transformer_layers': 6,
-    'embedding_dim': 32,
-    'mlp_size': 64,
-    'n_heads': 4,
-    'attn_dropout': 0.3,
-    'mlp_dropout': 0.2,
-    'emb_dropout': 0.2,
-    'n_classes': settings.n_classes
+    'embedding_dim': 768,
+    'mlp_dim': 64,
+    'num_heads': 4,
+    'attn_dropout': 0.2,
+    'num_classes': settings.n_classes
 }

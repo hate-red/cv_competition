@@ -1,137 +1,101 @@
 import torch
+from torch import Tensor
 from torch import nn
 
 
-class PatchEncoder(nn.Module):
-    def __init__(self, in_channels: int, embedding_dim: int, patch_size: int) -> None:
-        super().__init__()
-
-        self.conv2d = nn.Conv2d(
-            in_channels=in_channels,
-            out_channels=embedding_dim,
-            kernel_size=patch_size,
-            stride=patch_size,
-            padding=0
-        )
-        self.flatten = nn.Flatten(2, 3)
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = self.conv2d(x)
-        out = self.flatten(out)
-
-        return out.permute(0, 2, 1)
-
-
-class AttentionBlock(nn.Module):
-    def __init__(self, embedding_dim: int, n_heads: int, dropout_p: float) -> None:
-        super().__init__()
-
-        self.layer_norm = nn.LayerNorm(embedding_dim)
-        self.msa = nn.MultiheadAttention(embedding_dim, n_heads, dropout_p)
-    
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = self.layer_norm(x)
-        out, _ = self.msa(query=out, key=out, value=out, need_weights=False)
-
-        return out
-
-
-class MLPBlock(nn.Module):
-    def __init__(self, embedding_dim: int, mlp_size: int, dropout_p: float) -> None:
-        super().__init__()
-
-        self.layer_norm = nn.LayerNorm(embedding_dim)
-        self.mlp = nn.Sequential(
-            nn.Linear(embedding_dim, mlp_size),
-            nn.GELU(),
-            nn.Dropout(dropout_p),
-            nn.Linear(mlp_size, embedding_dim),
-            nn.Dropout(dropout_p),
-        )
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = self.layer_norm(x)
-        out = self.mlp(out)
-
-        return out
-
-class TransformerBlock(nn.Module):
+class PatchEmbedding(nn.Module):
     def __init__(
-            self, 
-            embedding_dim: int,
-            n_heads: int,
-            mlp_size: int,
-            mlp_dropout: float,
-            attn_dropout: float,
-    ) -> None:
+            self,
+            patch_size: int, 
+            n_channels: int, 
+            embedding_dim: int
+        ):
         super().__init__()
 
-        self.attn_block = AttentionBlock(embedding_dim, n_heads, attn_dropout)
-        self.mlp_block = MLPBlock(embedding_dim, mlp_size, mlp_dropout)
+        self.patch_size = patch_size
+        self.proj = nn.Conv2d(n_channels, embedding_dim, patch_size, patch_size)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        out = self.attn_block(x) + x
-        out = self.mlp_block(out) + out
+    def forward(self, x: Tensor) -> Tensor:
+        x = self.proj(x).flatten(2).transpose(1, 2)
+        return x
 
-        return out
+
+class PositionalEncoding(nn.Module):
+    def __init__(self, embedding_dim: int, seq_len: int):
+        super().__init__()
+
+        self.pos_embed = nn.Parameter(torch.randn(1, seq_len + 1, embedding_dim))
+
+    def forward(self, x: Tensor) -> Tensor:
+        return x + self.pos_embed
+
+
+class MultiHeadAttention(nn.Module):
+    def __init__(self, embedding_dim: int, num_heads: int, dropout: float):
+        super().__init__()
+
+        self.attn = nn.MultiheadAttention(embedding_dim, num_heads, dropout)
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.attn(x, x, x)[0]
     
+
+class TransformerEncoderBlock(nn.Module):
+    def __init__(self, embedding_dim: int, num_heads: int, mlp_dim: int, attn_dropout: float):
+        super().__init__()
+
+        self.attn = MultiHeadAttention(embedding_dim, num_heads, attn_dropout)
+
+        self.mlp = nn.Sequential(
+            nn.Linear(embedding_dim, mlp_dim),
+            nn.ReLU(),
+            nn.Linear(mlp_dim, embedding_dim)
+        )
+        self.norm = nn.LayerNorm(embedding_dim)
+
+    def forward(self, x: Tensor) -> Tensor:
+        x = x + self.attn(self.norm(x))
+        x = x + self.mlp(self.norm(x))
+        return x
 
 class ViT(nn.Module):
     model_name: str = 'ViT'
     
     def __init__(
-            self,
+            self, 
+            img_size: int, 
             n_channels: int,
-            img_size: int,
             patch_size: int,
-            n_transformer_layers: int,
-            embedding_dim: int,
-            mlp_size: int,
-            n_heads: int,
+            embedding_dim: int, 
+            num_heads: int, 
+            num_layers: int, 
+            mlp_dim: int,
             attn_dropout: float,
-            mlp_dropout: float,
-            emb_dropout: float,
-            n_classes: int,
-    ) -> None:
+            num_classes: int,
+        ):
         super().__init__()
 
-        self.num_patches = (img_size // patch_size) ** 2
-
-        self.class_embedding = nn.Parameter(
-            torch.rand((1, 1, embedding_dim)),
-            requires_grad=True,
-        )
-
-        self.positional_embedding = nn.Parameter(
-            torch.rand(1, self.num_patches + 1, embedding_dim),
-            requires_grad=True,
-        )
-
-        self.embedding_dropout = nn.Dropout(emb_dropout)
-
-        self.patch_embedding_block = PatchEncoder(n_channels, embedding_dim, patch_size)
-
-        self.transformers_blocks = nn.Sequential(*[
-            TransformerBlock(embedding_dim, n_heads, mlp_size, mlp_dropout, attn_dropout)
-            for _ in range(n_transformer_layers)
+        self.patch_embedding = PatchEmbedding(patch_size, n_channels, embedding_dim)
+        self.pos_encoding = PositionalEncoding(embedding_dim, (img_size // patch_size) ** 2)
+        
+        self.transformer_blocks = nn.Sequential(*[
+            TransformerEncoderBlock(embedding_dim, num_heads, mlp_dim, attn_dropout) 
+            for _ in range(num_layers)
         ])
 
-        self.classifier = nn.Sequential(
-            nn.LayerNorm(embedding_dim),
-            nn.Linear(embedding_dim, n_classes)
-        )
-    
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        batch_size = x.shape[0]
-        class_tocken = self.class_embedding.expand(batch_size, -1, -1)
-        
-        embedded_patch = self.patch_embedding_block(x)
-        patch_and_class = torch.cat((class_tocken, embedded_patch), dim=1)
-        
-        res = patch_and_class + self.positional_embedding
-        res_sparse = self.embedding_dropout(res)
+        self.class_token = nn.Parameter(torch.randn(1, 1, embedding_dim))
 
-        transformers_out = self.transformers_blocks(res_sparse)
-        prediction = self.classifier(transformers_out[:, 0])
+        self.classifier = nn.Linear(embedding_dim, num_classes)
 
-        return prediction.squeeze()
+    def forward(self, x: Tensor) -> Tensor:
+        B = x.size(0)
+        x = self.patch_embedding(x)
+
+        cls_tokens = self.class_token.expand(B, -1, -1)
+
+        x = torch.cat((cls_tokens, x), dim=1)
+        x = self.pos_encoding(x)
+        
+        x = self.transformer_blocks(x)
+        
+        return self.classifier(x[:, 0])
