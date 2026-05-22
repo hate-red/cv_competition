@@ -16,15 +16,16 @@ class Settings:
 
     random_seed: int = 42
 
-    batch_size: int = 1024
-    num_workers: int = os.cpu_count() # type: ignore
+    batch_size: int = 128
     epochs: int = 100
-    lr: float = 1e-4
+    lr: float = 1e-1
+    weight_decay: float = 1e-4
+    momentum: float = 0.9
 
-    n_channels: int = 1
-    img_size: int = 28
+    n_channels: int = 3
+    img_size: int = 32
     n_classes: int = 10
-    
+
 
 project_path = Path(__file__).parent
 
@@ -47,14 +48,14 @@ settings = Settings(project_path, ds_path, train_ds_path, test_ds_path, save_res
 mlp_params: dict = {
     'n_channels': settings.n_channels,
     'img_size': settings.img_size,
-    'n_hidden_layers': 20,
-    'n_hidden_units': 128,
+    'n_hidden_layers': 128,
+    'n_hidden_units': 1024,
     'n_classes': settings.n_classes
 }
 
 cnn_params: dict = {
     'n_channels': settings.n_channels,
-    'n_hidden_units': 16,
+    'n_hidden_units': 128,
     'n_classes': settings.n_classes
 }
 

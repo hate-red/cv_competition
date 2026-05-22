@@ -16,16 +16,21 @@ from config import settings, mlp_params, cnn_params, vit_params
 
 
 set_seed()
-
+ 
 models = [MLP(**mlp_params), CNN(**cnn_params), ResNet]
 
 criterion = torch.nn.CrossEntropyLoss()
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-
 for model in tqdm(models):
     model.to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=settings.lr)
+
+    optimizer = torch.optim.SGD(
+        params=model.parameters(), 
+        lr=settings.lr, 
+        weight_decay=settings.weight_decay, 
+        momentum=settings.momentum
+    )
 
     print(f'Started training {model.model_name} model...')
 
@@ -40,4 +45,9 @@ for model in tqdm(models):
 
     print(f'Finished training {model.model_name} model')
 
-    plot_results(results, model.model_name, show=False, save_to=settings.save_results_path / f'{model.model_name}.png')
+    plot_results(
+        results=results, 
+        title=model.model_name,
+        show=False,
+        save_to=settings.save_results_path / f'{model.model_name}.png'
+    )
